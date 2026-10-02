@@ -30,7 +30,7 @@ class TemporaryPermissionFlowTest extends TestCase
     {
         [$employeeUser, $employee, $managerUser, , $shift] = $this->workforce();
         $schedule = $this->schedule($employee, $shift, '2026-10-12');
-        $this->attendance($employee, $schedule);
+        $this->attendance($employee, $schedule, false);
 
         $this->actingAs($employeeUser)->post('/my/temporary-permissions', [
             'shift_schedule_id' => $schedule->id,
