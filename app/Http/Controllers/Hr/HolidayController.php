@@ -7,6 +7,7 @@ use App\Models\Holiday;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class HolidayController extends Controller
@@ -26,11 +27,17 @@ class HolidayController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'holiday_date' => ['required', 'date', 'unique:holidays,holiday_date'],
+            'holiday_date' => ['required', 'date'],
             'name' => ['required', 'string', 'max:160'],
             'type' => ['required', Rule::in(['national', 'company'])],
             'reference' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if (Holiday::query()->whereDate('holiday_date', $data['holiday_date'])->exists()) {
+            throw ValidationException::withMessages([
+                'holiday_date' => 'Tanggal tersebut sudah terdaftar sebagai hari libur.',
+            ]);
+        }
 
         Holiday::create($data + ['is_active' => true]);
 
@@ -46,16 +53,21 @@ class HolidayController extends Controller
     public function update(Request $request, Holiday $holiday): RedirectResponse
     {
         $data = $request->validate([
-            'holiday_date' => [
-                'required',
-                'date',
-                Rule::unique('holidays', 'holiday_date')->ignore($holiday),
-            ],
+            'holiday_date' => ['required', 'date'],
             'name' => ['required', 'string', 'max:160'],
             'type' => ['required', Rule::in(['national', 'company'])],
             'reference' => ['nullable', 'string', 'max:255'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if (Holiday::query()
+            ->whereDate('holiday_date', $data['holiday_date'])
+            ->whereKeyNot($holiday->getKey())
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'holiday_date' => 'Tanggal tersebut sudah terdaftar sebagai hari libur.',
+            ]);
+        }
 
         $data['is_active'] = $request->boolean('is_active');
         $holiday->update($data);
