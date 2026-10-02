@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeCompensation extends Model
 {
+    protected $table = 'employee_compensations';
+
     protected $fillable = [
         'employee_id', 'effective_from', 'base_salary', 'currency', 'notes',
     ];
