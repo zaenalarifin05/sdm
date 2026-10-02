@@ -130,7 +130,7 @@ class ReportsExportUatTest extends TestCase
         $hr = User::query()->where('role', UserRole::HrAdmin)->firstOrFail();
 
         $october = $this->payroll($finance, $employeeA, 'Oktober 2026', '2026-10-01', '2026-10-31', '5200000.00');
-        $november = $this->payroll($finance, $employeeA, 'November 2026', '2026-11-01', '2026-11-30', '5300000.00');
+        $november = $this->payroll($finance, $employeeA, 'November 2026', '2026-11-01', '2026-11-30', '5400000.00');
 
         $this->actingAs($finance)
             ->get('/finance/reports/payroll?payroll_period_id='.$october->payroll_period_id)
@@ -146,7 +146,8 @@ class ReportsExportUatTest extends TestCase
 
         $this->assertStringContainsString('Oktober 2026', $csv);
         $this->assertStringContainsString('5200000.00', $csv);
-        $this->assertStringNotContainsString('5300000.00', $csv);
+        $this->assertStringNotContainsString('November 2026', $csv);
+        $this->assertStringNotContainsString('5400000.00', $csv);
 
         $this->actingAs($hr)
             ->get('/finance/reports/payroll')
