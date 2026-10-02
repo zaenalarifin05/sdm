@@ -9,6 +9,11 @@ use Illuminate\Validation\ValidationException;
 
 class FinalizePayrollPeriod
 {
+    public function __construct(
+        private readonly ApplyPayrollPolicies $applyPolicies,
+    ) {
+    }
+
     public function execute(PayrollPeriod $period, User $actor): PayrollPeriod
     {
         if (! $actor->hasAnyRole('finance')) {
@@ -65,6 +70,8 @@ class FinalizePayrollPeriod
             }
 
             foreach ($payrolls as $payroll) {
+                $payroll = $this->applyPolicies->execute($payroll);
+
                 $payroll->update([
                     'status' => 'FINALIZED',
                     'finalized_at' => now(),

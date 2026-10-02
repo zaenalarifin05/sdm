@@ -10,6 +10,9 @@
 <form method="POST" action="{{ route('finance.payroll.generate',$period) }}">@csrf
 <button>Generate / Refresh Draft</button>
 </form>
+<form method="POST" action="{{ route('finance.payroll.apply-policies',$period) }}">@csrf
+<button>Apply Policy Preview</button>
+</form>
 <form method="POST" action="{{ route('finance.payroll.finalize',$period) }}">@csrf
 <button>Finalize Payroll</button>
 </form>
@@ -21,9 +24,9 @@
 <div class="card">
 <h3>Status Policy</h3>
 <table>
-<tr><th>Potongan ABSENT</th><td>{{ config('payroll.policies.absent_deduction.enabled') ? 'READY' : 'BELUM DIKONFIGURASI' }}</td></tr>
-<tr><th>Potongan Keterlambatan</th><td>{{ config('payroll.policies.late_deduction.enabled') ? 'READY' : 'BELUM DIKONFIGURASI' }}</td></tr>
-<tr><th>Nilai Lembur</th><td>{{ config('payroll.policies.overtime_pay.enabled') ? 'READY' : 'BELUM DIKONFIGURASI' }}</td></tr>
+<tr><th>Potongan ABSENT</th><td>{{ config('payroll.policies.absent_deduction.enabled') ? 'READY · '.config('payroll.policies.absent_deduction.mode') : 'BELUM DIKONFIGURASI' }}</td></tr>
+<tr><th>Potongan Keterlambatan</th><td>{{ config('payroll.policies.late_deduction.enabled') ? 'READY · '.config('payroll.policies.late_deduction.mode') : 'BELUM DIKONFIGURASI' }}</td></tr>
+<tr><th>Nilai Lembur</th><td>{{ config('payroll.policies.overtime_pay.enabled') ? 'READY · '.config('payroll.policies.overtime_pay.mode') : 'BELUM DIKONFIGURASI' }}</td></tr>
 </table>
 </div>
 
