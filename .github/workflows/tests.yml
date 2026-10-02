@@ -59,6 +59,7 @@ jobs:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_SSLMODE: disable
+      DB_TIMEZONE: Asia/Jakarta
       CACHE_STORE: array
       SESSION_DRIVER: array
       QUEUE_CONNECTION: sync

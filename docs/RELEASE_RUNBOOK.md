@@ -28,6 +28,7 @@ Pastikan secara tersanitasi:
 - `APP_DEBUG=false`
 - `APP_KEY_SET=YES`
 - `DB_CONNECTION=pgsql`
+- `DB_TIMEZONE=Asia/Jakarta`
 - `DB_CREDENTIALS_SET=YES`
 - document root mengarah ke `public/`
 - `storage/` dan `bootstrap/cache/` writable oleh runtime user
