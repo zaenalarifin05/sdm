@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class ProcessAttendanceForWorkDate
 {
+    public function __construct(
+        private readonly AttendanceStatusPolicy $statusPolicy,
+    ) {
+    }
+
     public function execute(string $workDate, ?CarbonImmutable $asOf = null): Collection
     {
         $timezone = (string) config('app.timezone', 'Asia/Jakarta');
@@ -52,11 +57,13 @@ class ProcessAttendanceForWorkDate
                 } elseif ($attendance->check_out_at) {
                     $attendance->update([
                         'state' => 'completed',
-                        'attendance_status' => 'PRESENT',
+                        'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
+                        'attendance_status' => $this->statusPolicy->completedStatus($attendance),
                     ]);
                 } else {
                     $attendance->update([
                         'state' => 'incomplete',
+                        'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
                         'attendance_status' => 'INCOMPLETE',
                     ]);
                 }

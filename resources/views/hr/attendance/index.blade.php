@@ -29,7 +29,7 @@
         @csrf
         <input type="hidden" name="work_date" value="{{ $workDate }}">
         <button type="submit">Proses Status Presensi</button>
-        <span class="muted">Hanya shift yang waktu selesainya sudah terlewati yang diproses.</span>
+        <span class="muted">Toleransi terlambat: {{ config('attendance.late_tolerance_minutes') }} menit. Hanya shift yang waktu selesainya sudah terlewati yang diproses.</span>
     </form>
 </div>
 
@@ -43,6 +43,7 @@
             <th>Shift</th>
             <th>Check-In</th>
             <th>Check-Out</th>
+            <th>Terlambat</th>
             <th>Status</th>
         </tr>
     </thead>
@@ -56,10 +57,11 @@
             <td>{{ $schedule->shift->name }}</td>
             <td>{{ $attendance?->check_in_at?->timezone(config('app.timezone'))->format('H:i:s') ?? '-' }}</td>
             <td>{{ $attendance?->check_out_at?->timezone(config('app.timezone'))->format('H:i:s') ?? '-' }}</td>
+            <td>{{ $attendance?->late_minutes !== null ? $attendance->late_minutes.' menit' : '-' }}</td>
             <td>{{ $attendance?->attendance_status ?? 'PENDING' }}</td>
         </tr>
     @empty
-        <tr><td colspan="7">{{ $holiday ? 'Hari libur tanpa jadwal kerja aktif.' : 'Tidak ada jadwal aktif pada tanggal ini.' }}</td></tr>
+        <tr><td colspan="8">{{ $holiday ? 'Hari libur tanpa jadwal kerja aktif.' : 'Tidak ada jadwal aktif pada tanggal ini.' }}</td></tr>
     @endforelse
     </tbody>
 </table>

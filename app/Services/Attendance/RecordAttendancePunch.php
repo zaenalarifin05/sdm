@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Hash;
 
 class RecordAttendancePunch
 {
+    public function __construct(
+        private readonly AttendanceStatusPolicy $statusPolicy,
+    ) {
+    }
+
     public function execute(string $nip, string $pin, ?CarbonImmutable $now = null): AttendancePunchResult
     {
         $timezone = (string) config('app.timezone', 'Asia/Jakarta');
@@ -40,11 +45,11 @@ class RecordAttendancePunch
                 ->first();
 
             if ($openAttendance) {
-                $openAttendance->update([
-                    'check_out_at' => $now,
-                    'state' => 'completed',
-                    'attendance_status' => 'PRESENT',
-                ]);
+                $openAttendance->check_out_at = $now;
+                $openAttendance->state = 'completed';
+                $openAttendance->late_minutes = $this->statusPolicy->lateMinutes($openAttendance);
+                $openAttendance->attendance_status = $this->statusPolicy->completedStatus($openAttendance);
+                $openAttendance->save();
 
                 return new AttendancePunchResult(
                     'check_out',
@@ -78,6 +83,7 @@ class RecordAttendancePunch
                 'scheduled_end_at' => $scheduledEnd,
                 'check_in_at' => $now,
                 'state' => 'checked_in',
+                'late_minutes' => max(0, intdiv($now->getTimestamp() - $scheduledStart->getTimestamp(), 60)),
             ]);
 
             return new AttendancePunchResult(
