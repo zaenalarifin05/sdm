@@ -34,4 +34,39 @@ class Employee extends Model
     {
         return $this->hasMany(ShiftSchedule::class);
     }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(LeaveBalance::class);
+    }
+
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function overtimeRequests(): HasMany
+    {
+        return $this->hasMany(OvertimeRequest::class);
+    }
+
+    public function temporaryPermissions(): HasMany
+    {
+        return $this->hasMany(TemporaryPermission::class);
+    }
+
+    public function compensations(): HasMany
+    {
+        return $this->hasMany(EmployeeCompensation::class);
+    }
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
 }
