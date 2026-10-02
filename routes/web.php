@@ -5,6 +5,9 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Finance\EmployeeCompensationController;
 use App\Http\Controllers\Finance\PayrollDraftController;
+use App\Http\Controllers\Finance\PayrollEntryController;
+use App\Http\Controllers\Finance\PayrollFinalizeController;
+use App\Http\Controllers\Finance\PayrollItemController;
 use App\Http\Controllers\Finance\PayrollPeriodController;
 use App\Http\Controllers\Hr\AttendanceMonitorController;
 use App\Http\Controllers\Hr\DepartmentController;
@@ -107,5 +110,10 @@ Route::middleware('auth')->group(function () {
         Route::post('payroll', [PayrollPeriodController::class, 'store'])->name('payroll.store');
         Route::get('payroll/{payrollPeriod}', [PayrollPeriodController::class, 'show'])->name('payroll.show');
         Route::post('payroll/{payrollPeriod}/generate', [PayrollDraftController::class, 'generate'])->name('payroll.generate');
+        Route::post('payroll/{payrollPeriod}/finalize', [PayrollFinalizeController::class, 'store'])->name('payroll.finalize');
+
+        Route::get('payroll-entry/{payroll}', [PayrollEntryController::class, 'show'])->name('payroll-entry.show');
+        Route::post('payroll-entry/{payroll}/items', [PayrollItemController::class, 'store'])->name('payroll-items.store');
+        Route::delete('payroll-entry/{payroll}/items/{payrollItem}', [PayrollItemController::class, 'destroy'])->name('payroll-items.destroy');
     });
 });

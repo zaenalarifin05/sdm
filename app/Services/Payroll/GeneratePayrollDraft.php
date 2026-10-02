@@ -16,6 +16,11 @@ use Illuminate\Validation\ValidationException;
 
 class GeneratePayrollDraft
 {
+    public function __construct(
+        private readonly RecalculatePayrollTotals $recalculate,
+    ) {
+    }
+
     public function execute(PayrollPeriod $period, User $actor): Collection
     {
         if (! $actor->hasAnyRole('finance')) {
@@ -112,7 +117,7 @@ class GeneratePayrollDraft
                     ->whereDate('work_date', '<=', $period->period_end->format('Y-m-d'))
                     ->sum('duration_minutes');
 
-                return Payroll::query()->updateOrCreate(
+                $payroll = Payroll::query()->updateOrCreate(
                     [
                         'payroll_period_id' => $period->id,
                         'employee_id' => $employee->id,
@@ -135,6 +140,8 @@ class GeneratePayrollDraft
                         'generated_by' => $actor->id,
                     ]
                 );
+
+                return $this->recalculate->execute($payroll);
             });
         });
     }
