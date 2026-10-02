@@ -6,22 +6,46 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   feature-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, pdo_sqlite
           coverage: none
+
       - name: Install dependencies
-        run: composer update --no-interaction --prefer-dist --no-progress
+        run: |
+          if [ -f composer.lock ]; then
+            composer install --no-interaction --prefer-dist --no-progress
+          else
+            composer update --no-interaction --prefer-dist --no-progress
+          fi
+
+      - name: Commit generated Composer lockfile
+        if: github.event_name == 'push' && hashFiles('composer.lock') != ''
+        run: |
+          if git ls-files --error-unmatch composer.lock >/dev/null 2>&1; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.lock
+          git commit -m "build: lock Composer dependencies"
+          git push origin HEAD:development
+
       - name: Prepare application
         run: |
           cp .env.example .env
           php artisan key:generate
+
       - name: Run feature tests
         run: php artisan test --testsuite=Feature
