@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   feature-tests:
@@ -23,24 +23,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: |
-          if [ -f composer.lock ]; then
-            composer install --no-interaction --prefer-dist --no-progress
-          else
-            composer update --no-interaction --prefer-dist --no-progress
-          fi
-
-      - name: Commit generated Composer lockfile
-        if: github.event_name == 'push' && hashFiles('composer.lock') != ''
-        run: |
-          if git ls-files --error-unmatch composer.lock >/dev/null 2>&1; then
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add composer.lock
-          git commit -m "build: lock Composer dependencies"
-          git push origin HEAD:development
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Prepare application
         run: |
