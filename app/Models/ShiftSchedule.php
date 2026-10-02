@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ShiftSchedule extends Model
@@ -33,5 +34,10 @@ class ShiftSchedule extends Model
     public function attendance(): HasOne
     {
         return $this->hasOne(Attendance::class);
+    }
+
+    public function overtimeRequests(): HasMany
+    {
+        return $this->hasMany(OvertimeRequest::class);
     }
 }

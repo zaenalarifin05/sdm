@@ -10,11 +10,14 @@ use App\Http\Controllers\Hr\HolidayController;
 use App\Http\Controllers\Hr\LeaveApprovalController as HrLeaveApprovalController;
 use App\Http\Controllers\Hr\LeaveBalanceController;
 use App\Http\Controllers\Hr\LeaveTypeController;
+use App\Http\Controllers\Hr\OvertimeApprovalController as HrOvertimeApprovalController;
 use App\Http\Controllers\Hr\ShiftController;
 use App\Http\Controllers\Hr\ShiftScheduleController;
 use App\Http\Controllers\Manager\LeaveApprovalController as ManagerLeaveApprovalController;
+use App\Http\Controllers\Manager\OvertimeApprovalController as ManagerOvertimeApprovalController;
 use App\Http\Controllers\MyAttendanceController;
 use App\Http\Controllers\MyLeaveController;
+use App\Http\Controllers\MyOvertimeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/attendance', [AttendanceKioskController::class, 'create'])->name('attendance.create');
@@ -39,12 +42,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/my/leave/create', [MyLeaveController::class, 'create'])->name('my.leave.create');
     Route::post('/my/leave', [MyLeaveController::class, 'store'])->name('my.leave.store');
 
+    Route::get('/my/overtime', [MyOvertimeController::class, 'index'])->name('my.overtime.index');
+    Route::get('/my/overtime/create', [MyOvertimeController::class, 'create'])->name('my.overtime.create');
+    Route::post('/my/overtime', [MyOvertimeController::class, 'store'])->name('my.overtime.store');
+
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::prefix('manager')->name('manager.')->middleware('role:manager')->group(function () {
         Route::get('leave', [ManagerLeaveApprovalController::class, 'index'])->name('leave.index');
         Route::post('leave/{leaveRequest}/approve', [ManagerLeaveApprovalController::class, 'approve'])->name('leave.approve');
         Route::post('leave/{leaveRequest}/reject', [ManagerLeaveApprovalController::class, 'reject'])->name('leave.reject');
+
+        Route::get('overtime', [ManagerOvertimeApprovalController::class, 'index'])->name('overtime.index');
+        Route::post('overtime/{overtimeRequest}/approve', [ManagerOvertimeApprovalController::class, 'approve'])->name('overtime.approve');
+        Route::post('overtime/{overtimeRequest}/reject', [ManagerOvertimeApprovalController::class, 'reject'])->name('overtime.reject');
     });
 
     Route::prefix('hr')->name('hr.')->middleware('role:hr_admin,system_admin')->group(function () {
@@ -54,6 +65,10 @@ Route::middleware('auth')->group(function () {
         Route::get('leave', [HrLeaveApprovalController::class, 'index'])->name('leave.index');
         Route::post('leave/{leaveRequest}/approve', [HrLeaveApprovalController::class, 'approve'])->name('leave.approve');
         Route::post('leave/{leaveRequest}/reject', [HrLeaveApprovalController::class, 'reject'])->name('leave.reject');
+
+        Route::get('overtime', [HrOvertimeApprovalController::class, 'index'])->name('overtime.index');
+        Route::post('overtime/{overtimeRequest}/approve', [HrOvertimeApprovalController::class, 'approve'])->name('overtime.approve');
+        Route::post('overtime/{overtimeRequest}/reject', [HrOvertimeApprovalController::class, 'reject'])->name('overtime.reject');
 
         Route::get('leave-types', [LeaveTypeController::class, 'index'])->name('leave-types.index');
         Route::post('leave-types', [LeaveTypeController::class, 'store'])->name('leave-types.store');
