@@ -3,6 +3,9 @@
 use App\Http\Controllers\AttendanceKioskController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Finance\EmployeeCompensationController;
+use App\Http\Controllers\Finance\PayrollDraftController;
+use App\Http\Controllers\Finance\PayrollPeriodController;
 use App\Http\Controllers\Hr\AttendanceMonitorController;
 use App\Http\Controllers\Hr\DepartmentController;
 use App\Http\Controllers\Hr\EmployeeController;
@@ -82,5 +85,15 @@ Route::middleware('auth')->group(function () {
         Route::resource('employees', EmployeeController::class)->except('show');
         Route::resource('shifts', ShiftController::class)->except('show');
         Route::resource('schedules', ShiftScheduleController::class)->except('show');
+    });
+
+    Route::prefix('finance')->name('finance.')->middleware('role:finance')->group(function () {
+        Route::get('compensations', [EmployeeCompensationController::class, 'index'])->name('compensations.index');
+        Route::post('compensations', [EmployeeCompensationController::class, 'store'])->name('compensations.store');
+
+        Route::get('payroll', [PayrollPeriodController::class, 'index'])->name('payroll.index');
+        Route::post('payroll', [PayrollPeriodController::class, 'store'])->name('payroll.store');
+        Route::get('payroll/{payrollPeriod}', [PayrollPeriodController::class, 'show'])->name('payroll.show');
+        Route::post('payroll/{payrollPeriod}/generate', [PayrollDraftController::class, 'generate'])->name('payroll.generate');
     });
 });

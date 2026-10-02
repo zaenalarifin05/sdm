@@ -54,4 +54,14 @@ class Employee extends Model
     {
         return $this->hasMany(OvertimeRequest::class);
     }
+
+    public function compensations(): HasMany
+    {
+        return $this->hasMany(EmployeeCompensation::class);
+    }
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
 }
