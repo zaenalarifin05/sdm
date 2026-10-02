@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('title','Edit Jadwal Shift')
+@section('content')
+<h1>Edit Jadwal Shift</h1><div class="card"><form method="POST" action="{{ route('hr.schedules.update',$schedule) }}">@csrf @method('PUT')
+<div class="row"><div class="field"><label>Pegawai</label><select name="employee_id" required>@foreach($employees as $employee)<option value="{{ $employee->id }}" @selected($schedule->employee_id===$employee->id)>{{ $employee->nip }} · {{ $employee->name }}</option>@endforeach</select></div><div class="field"><label>Shift</label><select name="shift_id" required>@foreach($shifts as $shift)<option value="{{ $shift->id }}" @selected($schedule->shift_id===$shift->id)>{{ $shift->code }} · {{ $shift->name }}</option>@endforeach</select></div><div class="field"><label>Tanggal kerja</label><input type="date" name="work_date" value="{{ $schedule->work_date->format('Y-m-d') }}" required></div><div class="field"><label>Status</label><select name="status"><option value="scheduled" @selected($schedule->status==='scheduled')>scheduled</option><option value="cancelled" @selected($schedule->status==='cancelled')>cancelled</option></select></div></div>
+<br><button>Simpan</button> <a class="btn secondary" href="{{ route('hr.schedules.index') }}">Batal</a></form></div>@endsection
