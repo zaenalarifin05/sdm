@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\Attendance;
+use App\Models\LeaveRequest;
 use App\Models\ShiftSchedule;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -44,7 +45,37 @@ class ProcessAttendanceForWorkDate
                     ->lockForUpdate()
                     ->first();
 
-                if (! $attendance) {
+                $approvedLeave = LeaveRequest::query()
+                    ->with('leaveType')
+                    ->where('employee_id', $schedule->employee_id)
+                    ->where('status', 'APPROVED')
+                    ->whereHas('days', fn ($query) => $query
+                        ->where('shift_schedule_id', $schedule->id))
+                    ->first();
+
+                if ((! $attendance || ! $attendance->check_in_at) && $approvedLeave) {
+                    $status = $approvedLeave->leaveType->category === 'permit'
+                        ? 'PERMIT'
+                        : 'LEAVE';
+
+                    if ($attendance) {
+                        $attendance->update([
+                            'state' => 'excused',
+                            'attendance_status' => $status,
+                            'late_minutes' => null,
+                        ]);
+                    } else {
+                        $attendance = Attendance::create([
+                            'employee_id' => $schedule->employee_id,
+                            'shift_schedule_id' => $schedule->id,
+                            'work_date' => $schedule->work_date,
+                            'scheduled_start_at' => $scheduledStart,
+                            'scheduled_end_at' => $scheduledEnd,
+                            'state' => 'excused',
+                            'attendance_status' => $status,
+                        ]);
+                    }
+                } elseif (! $attendance) {
                     $attendance = Attendance::create([
                         'employee_id' => $schedule->employee_id,
                         'shift_schedule_id' => $schedule->id,
