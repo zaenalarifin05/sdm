@@ -19,6 +19,7 @@ class Attendance extends Model
         'attendance_status',
         'late_minutes',
         'early_leave_minutes',
+        'temporary_permission_minutes',
     ];
 
     protected function casts(): array

@@ -5,6 +5,7 @@ namespace App\Services\Attendance;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\ShiftSchedule;
+use App\Services\TemporaryPermission\CalculateTemporaryPermissionDuration;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ class ProcessAttendanceForWorkDate
 {
     public function __construct(
         private readonly AttendanceStatusPolicy $statusPolicy,
+        private readonly CalculateTemporaryPermissionDuration $temporaryPermissionDuration,
     ) {
     }
 
@@ -63,6 +65,7 @@ class ProcessAttendanceForWorkDate
                             'state' => 'excused',
                             'attendance_status' => $status,
                             'late_minutes' => null,
+                            'temporary_permission_minutes' => 0,
                         ]);
                     } else {
                         $attendance = Attendance::create([
@@ -73,6 +76,7 @@ class ProcessAttendanceForWorkDate
                             'scheduled_end_at' => $scheduledEnd,
                             'state' => 'excused',
                             'attendance_status' => $status,
+                            'temporary_permission_minutes' => 0,
                         ]);
                     }
                 } elseif (! $attendance) {
@@ -84,19 +88,51 @@ class ProcessAttendanceForWorkDate
                         'scheduled_end_at' => $scheduledEnd,
                         'state' => 'absent',
                         'attendance_status' => 'ABSENT',
+                        'temporary_permission_minutes' => 0,
                     ]);
-                } elseif ($attendance->check_out_at) {
+                } elseif (! $attendance->check_in_at) {
                     $attendance->update([
-                        'state' => 'completed',
-                        'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
-                        'attendance_status' => $this->statusPolicy->completedStatus($attendance),
+                        'state' => 'absent',
+                        'attendance_status' => 'ABSENT',
+                        'temporary_permission_minutes' => 0,
                     ]);
                 } else {
-                    $attendance->update([
-                        'state' => 'incomplete',
-                        'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
-                        'attendance_status' => 'INCOMPLETE',
-                    ]);
+                    $temporaryPermissionSeconds = $this->temporaryPermissionDuration
+                        ->secondsForSchedule($schedule, $asOf, $scheduledEnd);
+                    $temporaryPermissionMinutes = (int) ceil($temporaryPermissionSeconds / 60);
+                    $maxAllowedSeconds = ((int) config('temporary_permission.max_allowed_minutes', 120)) * 60;
+                    $hasOpenPermission = $this->temporaryPermissionDuration
+                        ->hasOpenPermission($schedule);
+
+                    if ($temporaryPermissionSeconds > $maxAllowedSeconds) {
+                        $attendance->update([
+                            'state' => 'absent',
+                            'attendance_status' => 'ABSENT',
+                            'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
+                            'temporary_permission_minutes' => $temporaryPermissionMinutes,
+                        ]);
+                    } elseif ($hasOpenPermission) {
+                        $attendance->update([
+                            'state' => 'incomplete',
+                            'attendance_status' => 'INCOMPLETE',
+                            'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
+                            'temporary_permission_minutes' => $temporaryPermissionMinutes,
+                        ]);
+                    } elseif ($attendance->check_out_at) {
+                        $attendance->update([
+                            'state' => 'completed',
+                            'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
+                            'attendance_status' => $this->statusPolicy->completedStatus($attendance),
+                            'temporary_permission_minutes' => $temporaryPermissionMinutes,
+                        ]);
+                    } else {
+                        $attendance->update([
+                            'state' => 'incomplete',
+                            'late_minutes' => $this->statusPolicy->lateMinutes($attendance),
+                            'attendance_status' => 'INCOMPLETE',
+                            'temporary_permission_minutes' => $temporaryPermissionMinutes,
+                        ]);
+                    }
                 }
 
                 return [

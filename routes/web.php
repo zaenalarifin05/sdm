@@ -18,9 +18,11 @@ use App\Http\Controllers\Hr\ShiftController;
 use App\Http\Controllers\Hr\ShiftScheduleController;
 use App\Http\Controllers\Manager\LeaveApprovalController as ManagerLeaveApprovalController;
 use App\Http\Controllers\Manager\OvertimeApprovalController as ManagerOvertimeApprovalController;
+use App\Http\Controllers\Manager\TemporaryPermissionApprovalController;
 use App\Http\Controllers\MyAttendanceController;
 use App\Http\Controllers\MyLeaveController;
 use App\Http\Controllers\MyOvertimeController;
+use App\Http\Controllers\MyTemporaryPermissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/attendance', [AttendanceKioskController::class, 'create'])->name('attendance.create');
@@ -49,6 +51,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/my/overtime/create', [MyOvertimeController::class, 'create'])->name('my.overtime.create');
     Route::post('/my/overtime', [MyOvertimeController::class, 'store'])->name('my.overtime.store');
 
+    Route::get('/my/temporary-permissions', [MyTemporaryPermissionController::class, 'index'])->name('my.temporary-permissions.index');
+    Route::get('/my/temporary-permissions/create', [MyTemporaryPermissionController::class, 'create'])->name('my.temporary-permissions.create');
+    Route::post('/my/temporary-permissions', [MyTemporaryPermissionController::class, 'store'])->name('my.temporary-permissions.store');
+    Route::post('/my/temporary-permissions/{temporaryPermission}/start', [MyTemporaryPermissionController::class, 'start'])->name('my.temporary-permissions.start');
+    Route::post('/my/temporary-permissions/{temporaryPermission}/return', [MyTemporaryPermissionController::class, 'return'])->name('my.temporary-permissions.return');
+
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::prefix('manager')->name('manager.')->middleware('role:manager')->group(function () {
@@ -59,6 +67,10 @@ Route::middleware('auth')->group(function () {
         Route::get('overtime', [ManagerOvertimeApprovalController::class, 'index'])->name('overtime.index');
         Route::post('overtime/{overtimeRequest}/approve', [ManagerOvertimeApprovalController::class, 'approve'])->name('overtime.approve');
         Route::post('overtime/{overtimeRequest}/reject', [ManagerOvertimeApprovalController::class, 'reject'])->name('overtime.reject');
+
+        Route::get('temporary-permissions', [TemporaryPermissionApprovalController::class, 'index'])->name('temporary-permissions.index');
+        Route::post('temporary-permissions/{temporaryPermission}/approve', [TemporaryPermissionApprovalController::class, 'approve'])->name('temporary-permissions.approve');
+        Route::post('temporary-permissions/{temporaryPermission}/reject', [TemporaryPermissionApprovalController::class, 'reject'])->name('temporary-permissions.reject');
     });
 
     Route::prefix('hr')->name('hr.')->middleware('role:hr_admin,system_admin')->group(function () {

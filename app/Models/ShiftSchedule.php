@@ -40,4 +40,9 @@ class ShiftSchedule extends Model
     {
         return $this->hasMany(OvertimeRequest::class);
     }
+
+    public function temporaryPermissions(): HasMany
+    {
+        return $this->hasMany(TemporaryPermission::class);
+    }
 }
