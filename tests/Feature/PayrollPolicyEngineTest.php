@@ -9,6 +9,7 @@ use App\Models\EmployeeCompensation;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Models\PayrollPeriod;
+use App\Models\PayrollPolicyVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -17,29 +18,6 @@ use Tests\TestCase;
 class PayrollPolicyEngineTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config([
-            'payroll.policies.absent_deduction' => [
-                'enabled' => false,
-                'mode' => null,
-                'value' => null,
-            ],
-            'payroll.policies.late_deduction' => [
-                'enabled' => false,
-                'mode' => null,
-                'value' => null,
-            ],
-            'payroll.policies.overtime_pay' => [
-                'enabled' => false,
-                'mode' => null,
-                'value' => null,
-            ],
-        ]);
-    }
 
     public function test_policy_preview_is_idempotent_and_preserves_manual_items(): void
     {
@@ -70,23 +48,9 @@ class PayrollPolicyEngineTest extends TestCase
             'source_type' => 'MANUAL',
         ]);
 
-        config([
-            'payroll.policies.absent_deduction' => [
-                'enabled' => true,
-                'mode' => 'fixed_per_day',
-                'value' => '100000.00',
-            ],
-            'payroll.policies.late_deduction' => [
-                'enabled' => true,
-                'mode' => 'fixed_per_minute',
-                'value' => '1000.00',
-            ],
-            'payroll.policies.overtime_pay' => [
-                'enabled' => true,
-                'mode' => 'fixed_per_hour',
-                'value' => '60000.00',
-            ],
-        ]);
+        $this->policy($finance, 'absent_deduction', 'fixed_per_day', '100000.00');
+        $this->policy($finance, 'late_deduction', 'fixed_per_minute', '1000.00');
+        $this->policy($finance, 'overtime_pay', 'fixed_per_hour', '60000.00');
 
         $this->actingAs($finance)
             ->post('/finance/payroll/'.$period->id.'/apply-policies')
@@ -101,6 +65,7 @@ class PayrollPolicyEngineTest extends TestCase
         $this->assertDatabaseCount('payroll_items', 5);
         $this->assertSame(2, PayrollItem::where('source_type', 'MANUAL')->count());
         $this->assertSame(3, PayrollItem::where('source_type', 'POLICY')->count());
+        $this->assertSame(3, PayrollItem::where('source_type', 'POLICY')->whereNotNull('source_id')->count());
 
         $this->assertDatabaseHas('payroll_items', [
             'payroll_id' => $payroll->id,
@@ -135,13 +100,7 @@ class PayrollPolicyEngineTest extends TestCase
 
         $payroll->update(['absent_days' => 2]);
 
-        config([
-            'payroll.policies.absent_deduction' => [
-                'enabled' => true,
-                'mode' => 'salary_divisor_per_day',
-                'value' => 25,
-            ],
-        ]);
+        $this->policy($finance, 'absent_deduction', 'salary_divisor_per_day', '25');
 
         $this->actingAs($finance)
             ->post('/finance/payroll/'.$period->id.'/apply-policies')
@@ -163,12 +122,13 @@ class PayrollPolicyEngineTest extends TestCase
 
         $payroll->update(['absent_days' => 1]);
 
-        config([
-            'payroll.policies.absent_deduction' => [
-                'enabled' => true,
-                'mode' => null,
-                'value' => null,
-            ],
+        PayrollPolicyVersion::create([
+            'policy_key' => 'absent_deduction',
+            'enabled' => true,
+            'mode' => null,
+            'value' => null,
+            'effective_from' => '2026-10-01',
+            'created_by' => $finance->id,
         ]);
 
         $this->actingAs($finance)
@@ -190,23 +150,9 @@ class PayrollPolicyEngineTest extends TestCase
             'approved_overtime_minutes' => 60,
         ]);
 
-        config([
-            'payroll.policies.absent_deduction' => [
-                'enabled' => true,
-                'mode' => 'fixed_per_day',
-                'value' => '100000.00',
-            ],
-            'payroll.policies.late_deduction' => [
-                'enabled' => true,
-                'mode' => 'fixed_per_incident',
-                'value' => '25000.00',
-            ],
-            'payroll.policies.overtime_pay' => [
-                'enabled' => true,
-                'mode' => 'fixed_per_minute',
-                'value' => '1000.00',
-            ],
-        ]);
+        $this->policy($finance, 'absent_deduction', 'fixed_per_day', '100000.00');
+        $this->policy($finance, 'late_deduction', 'fixed_per_incident', '25000.00');
+        $this->policy($finance, 'overtime_pay', 'fixed_per_minute', '1000.00');
 
         $this->actingAs($finance)
             ->post('/finance/payroll/'.$period->id.'/finalize')
@@ -220,6 +166,23 @@ class PayrollPolicyEngineTest extends TestCase
         $this->assertSame('5060000.00', $payroll->gross_pay);
         $this->assertSame('125000.00', $payroll->total_deduction);
         $this->assertSame('4935000.00', $payroll->net_pay);
+    }
+
+    private function policy(
+        User $finance,
+        string $key,
+        string $mode,
+        string $value,
+        string $effectiveFrom = '2026-10-01'
+    ): PayrollPolicyVersion {
+        return PayrollPolicyVersion::create([
+            'policy_key' => $key,
+            'enabled' => true,
+            'mode' => $mode,
+            'value' => $value,
+            'effective_from' => $effectiveFrom,
+            'created_by' => $finance->id,
+        ]);
     }
 
     private function draftPayroll(string $baseSalary = '5000000.00'): array

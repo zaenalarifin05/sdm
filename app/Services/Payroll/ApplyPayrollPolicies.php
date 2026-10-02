@@ -4,6 +4,7 @@ namespace App\Services\Payroll;
 
 use App\Models\Payroll;
 use App\Models\PayrollItem;
+use App\Models\PayrollPolicyVersion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -12,6 +13,7 @@ class ApplyPayrollPolicies
     public function __construct(
         private readonly PayrollMoney $money,
         private readonly RecalculatePayrollTotals $recalculate,
+        private readonly PayrollPolicyResolver $resolver,
     ) {
     }
 
@@ -23,42 +25,37 @@ class ApplyPayrollPolicies
             ]);
         }
 
-        return DB::transaction(function () use ($payroll): Payroll {
+        $payroll->loadMissing('period');
+        $policies = $this->resolver->forPeriod($payroll->period);
+
+        return DB::transaction(function () use ($payroll, $policies): Payroll {
             $payroll->items()
                 ->where('source_type', 'POLICY')
                 ->delete();
 
-            $this->applyAbsentPolicy($payroll);
-            $this->applyLatePolicy($payroll);
-            $this->applyOvertimePolicy($payroll);
+            $this->applyAbsentPolicy($payroll, $policies->get('absent_deduction'));
+            $this->applyLatePolicy($payroll, $policies->get('late_deduction'));
+            $this->applyOvertimePolicy($payroll, $policies->get('overtime_pay'));
 
             return $this->recalculate->execute($payroll);
         });
     }
 
-    private function applyAbsentPolicy(Payroll $payroll): void
+    private function applyAbsentPolicy(Payroll $payroll, ?PayrollPolicyVersion $policy): void
     {
-        if ($payroll->absent_days < 1) {
+        if ($payroll->absent_days < 1 || ! $policy?->enabled) {
             return;
         }
 
-        $policy = config('payroll.policies.absent_deduction');
-
-        if (! ($policy['enabled'] ?? false)) {
-            return;
-        }
-
-        $mode = $policy['mode'] ?? null;
-        $value = $policy['value'] ?? null;
-
-        $amountCents = match ($mode) {
-            'fixed_per_day' => $this->positiveMoney($value) * $payroll->absent_days,
-            'salary_divisor_per_day' => $this->salaryDivisorDeduction($payroll, $value),
+        $amountCents = match ($policy->mode) {
+            'fixed_per_day' => $this->positiveMoney($policy->value) * $payroll->absent_days,
+            'salary_divisor_per_day' => $this->salaryDivisorDeduction($payroll, $policy->value),
             default => $this->invalidPolicy('ABSENT'),
         };
 
         $this->createItem(
             $payroll,
+            $policy,
             'DEDUCTION',
             'ABSENT_DEDUCTION',
             'Potongan Tidak Masuk',
@@ -67,35 +64,27 @@ class ApplyPayrollPolicies
         );
     }
 
-    private function applyLatePolicy(Payroll $payroll): void
+    private function applyLatePolicy(Payroll $payroll, ?PayrollPolicyVersion $policy): void
     {
-        if ($payroll->late_days < 1) {
+        if ($payroll->late_days < 1 || ! $policy?->enabled) {
             return;
         }
 
-        $policy = config('payroll.policies.late_deduction');
-
-        if (! ($policy['enabled'] ?? false)) {
-            return;
-        }
-
-        $mode = $policy['mode'] ?? null;
-        $value = $policy['value'] ?? null;
-
-        [$quantity, $amountCents] = match ($mode) {
+        [$quantity, $amountCents] = match ($policy->mode) {
             'fixed_per_minute' => [
                 (string) $payroll->late_minutes,
-                $this->positiveMoney($value) * $payroll->late_minutes,
+                $this->positiveMoney($policy->value) * $payroll->late_minutes,
             ],
             'fixed_per_incident' => [
                 (string) $payroll->late_days,
-                $this->positiveMoney($value) * $payroll->late_days,
+                $this->positiveMoney($policy->value) * $payroll->late_days,
             ],
             default => $this->invalidPolicy('LATE'),
         };
 
         $this->createItem(
             $payroll,
+            $policy,
             'DEDUCTION',
             'LATE_DEDUCTION',
             'Potongan Keterlambatan',
@@ -104,25 +93,16 @@ class ApplyPayrollPolicies
         );
     }
 
-    private function applyOvertimePolicy(Payroll $payroll): void
+    private function applyOvertimePolicy(Payroll $payroll, ?PayrollPolicyVersion $policy): void
     {
-        if ($payroll->approved_overtime_minutes < 1) {
+        if ($payroll->approved_overtime_minutes < 1 || ! $policy?->enabled) {
             return;
         }
 
-        $policy = config('payroll.policies.overtime_pay');
-
-        if (! ($policy['enabled'] ?? false)) {
-            return;
-        }
-
-        $mode = $policy['mode'] ?? null;
-        $value = $policy['value'] ?? null;
-
-        $amountCents = match ($mode) {
-            'fixed_per_minute' => $this->positiveMoney($value) * $payroll->approved_overtime_minutes,
+        $amountCents = match ($policy->mode) {
+            'fixed_per_minute' => $this->positiveMoney($policy->value) * $payroll->approved_overtime_minutes,
             'fixed_per_hour' => $this->roundHalfUp(
-                $this->positiveMoney($value) * $payroll->approved_overtime_minutes,
+                $this->positiveMoney($policy->value) * $payroll->approved_overtime_minutes,
                 60
             ),
             default => $this->invalidPolicy('OVERTIME'),
@@ -130,6 +110,7 @@ class ApplyPayrollPolicies
 
         $this->createItem(
             $payroll,
+            $policy,
             'ALLOWANCE',
             'OVERTIME_PAY',
             'Upah Lembur',
@@ -174,6 +155,7 @@ class ApplyPayrollPolicies
 
     private function createItem(
         Payroll $payroll,
+        PayrollPolicyVersion $policy,
         string $type,
         string $code,
         string $name,
@@ -188,6 +170,7 @@ class ApplyPayrollPolicies
             'quantity' => $quantity,
             'amount' => $this->money->fromCents($amountCents),
             'source_type' => 'POLICY',
+            'source_id' => $policy->id,
         ]);
     }
 

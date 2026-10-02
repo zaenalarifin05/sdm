@@ -10,6 +10,8 @@ use App\Http\Controllers\Finance\PayrollFinalizeController;
 use App\Http\Controllers\Finance\PayrollItemController;
 use App\Http\Controllers\Finance\PayrollPeriodController;
 use App\Http\Controllers\Finance\PayrollPolicyPreviewController;
+use App\Http\Controllers\Finance\PayrollPolicyController;
+use App\Http\Controllers\Finance\PayslipController as FinancePayslipController;
 use App\Http\Controllers\Hr\AttendanceMonitorController;
 use App\Http\Controllers\Hr\DepartmentController;
 use App\Http\Controllers\Hr\EmployeeController;
@@ -26,6 +28,7 @@ use App\Http\Controllers\Manager\TemporaryPermissionApprovalController;
 use App\Http\Controllers\MyAttendanceController;
 use App\Http\Controllers\MyLeaveController;
 use App\Http\Controllers\MyOvertimeController;
+use App\Http\Controllers\MyPayslipController;
 use App\Http\Controllers\MyTemporaryPermissionController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +49,8 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/my/attendance', MyAttendanceController::class)->name('my.attendance');
+    Route::get('/my/payslips', [MyPayslipController::class, 'index'])->name('my.payslips.index');
+    Route::get('/my/payslips/{payroll}', [MyPayslipController::class, 'show'])->name('my.payslips.show');
 
     Route::get('/my/leave', [MyLeaveController::class, 'index'])->name('my.leave.index');
     Route::get('/my/leave/create', [MyLeaveController::class, 'create'])->name('my.leave.create');
@@ -104,6 +109,9 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('finance')->name('finance.')->middleware('role:finance')->group(function () {
+        Route::get('payroll-policies', [PayrollPolicyController::class, 'index'])->name('payroll-policies.index');
+        Route::post('payroll-policies', [PayrollPolicyController::class, 'store'])->name('payroll-policies.store');
+
         Route::get('compensations', [EmployeeCompensationController::class, 'index'])->name('compensations.index');
         Route::post('compensations', [EmployeeCompensationController::class, 'store'])->name('compensations.store');
 
@@ -117,5 +125,6 @@ Route::middleware('auth')->group(function () {
         Route::get('payroll-entry/{payroll}', [PayrollEntryController::class, 'show'])->name('payroll-entry.show');
         Route::post('payroll-entry/{payroll}/items', [PayrollItemController::class, 'store'])->name('payroll-items.store');
         Route::delete('payroll-entry/{payroll}/items/{payrollItem}', [PayrollItemController::class, 'destroy'])->name('payroll-items.destroy');
+        Route::get('payslip/{payroll}', [FinancePayslipController::class, 'show'])->name('payslips.show');
     });
 });

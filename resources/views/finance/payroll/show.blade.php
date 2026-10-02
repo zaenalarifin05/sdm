@@ -24,9 +24,21 @@
 <div class="card">
 <h3>Status Policy</h3>
 <table>
-<tr><th>Potongan ABSENT</th><td>{{ config('payroll.policies.absent_deduction.enabled') ? 'READY · '.config('payroll.policies.absent_deduction.mode') : 'BELUM DIKONFIGURASI' }}</td></tr>
-<tr><th>Potongan Keterlambatan</th><td>{{ config('payroll.policies.late_deduction.enabled') ? 'READY · '.config('payroll.policies.late_deduction.mode') : 'BELUM DIKONFIGURASI' }}</td></tr>
-<tr><th>Nilai Lembur</th><td>{{ config('payroll.policies.overtime_pay.enabled') ? 'READY · '.config('payroll.policies.overtime_pay.mode') : 'BELUM DIKONFIGURASI' }}</td></tr>
+@foreach([
+'absent_deduction' => 'Potongan ABSENT',
+'late_deduction' => 'Potongan Keterlambatan',
+'overtime_pay' => 'Nilai Lembur',
+] as $key => $label)
+@php($policy=$policies->get($key))
+<tr><th>{{ $label }}</th><td>
+@if($policy)
+{{ $policy->enabled ? 'READY · '.$policy->mode.' · '.$policy->value : 'NONAKTIF' }}
+<span class="muted"> · efektif {{ $policy->effective_from->format('d-m-Y') }}</span>
+@else
+BELUM DIKONFIGURASI
+@endif
+</td></tr>
+@endforeach
 </table>
 </div>
 
@@ -47,7 +59,9 @@
 <td>{{ $payroll->late_days }} / {{ $payroll->late_minutes }} mnt</td>
 <td>{{ $payroll->approved_overtime_minutes }} mnt</td>
 <td>{{ $payroll->status }}</td>
-<td><a class="btn secondary" href="{{ route('finance.payroll-entry.show',$payroll) }}">Detail</a></td>
+<td><a class="btn secondary" href="{{ route('finance.payroll-entry.show',$payroll) }}">Detail</a>
+@if($payroll->status==='FINALIZED') <a class="btn" href="{{ route('finance.payslips.show',$payroll) }}">Payslip</a> @endif
+</td>
 </tr>
 @empty<tr><td colspan="12">Draft belum digenerate.</td></tr>@endforelse
 </tbody>

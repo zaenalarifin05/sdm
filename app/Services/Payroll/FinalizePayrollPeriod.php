@@ -11,6 +11,7 @@ class FinalizePayrollPeriod
 {
     public function __construct(
         private readonly ApplyPayrollPolicies $applyPolicies,
+        private readonly PayrollPolicyResolver $resolver,
     ) {
     }
 
@@ -48,24 +49,26 @@ class FinalizePayrollPeriod
                 ]);
             }
 
-            if (! config('payroll.policies.absent_deduction.enabled')
+            $policies = $this->resolver->forPeriod($lockedPeriod);
+
+            if (! $policies->get('absent_deduction')?->enabled
                 && $payrolls->contains(fn ($payroll) => $payroll->absent_days > 0)) {
                 throw ValidationException::withMessages([
-                    'payroll_period' => 'Policy potongan ABSENT belum dikonfigurasi.',
+                    'payroll_period' => 'Policy potongan ABSENT belum dikonfigurasi untuk periode ini.',
                 ]);
             }
 
-            if (! config('payroll.policies.late_deduction.enabled')
+            if (! $policies->get('late_deduction')?->enabled
                 && $payrolls->contains(fn ($payroll) => $payroll->late_days > 0)) {
                 throw ValidationException::withMessages([
-                    'payroll_period' => 'Policy potongan keterlambatan belum dikonfigurasi.',
+                    'payroll_period' => 'Policy potongan keterlambatan belum dikonfigurasi untuk periode ini.',
                 ]);
             }
 
-            if (! config('payroll.policies.overtime_pay.enabled')
+            if (! $policies->get('overtime_pay')?->enabled
                 && $payrolls->contains(fn ($payroll) => $payroll->approved_overtime_minutes > 0)) {
                 throw ValidationException::withMessages([
-                    'payroll_period' => 'Policy nilai lembur belum dikonfigurasi.',
+                    'payroll_period' => 'Policy nilai lembur belum dikonfigurasi untuk periode ini.',
                 ]);
             }
 

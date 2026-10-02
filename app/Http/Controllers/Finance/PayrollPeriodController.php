@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\PayrollPeriod;
+use App\Services\Payroll\PayrollPolicyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -52,10 +53,13 @@ class PayrollPeriodController extends Controller
             ->with('status', 'Payroll period berhasil dibuat.');
     }
 
-    public function show(PayrollPeriod $payrollPeriod): View
-    {
+    public function show(
+        PayrollPeriod $payrollPeriod,
+        PayrollPolicyResolver $resolver
+    ): View {
         return view('finance.payroll.show', [
             'period' => $payrollPeriod,
+            'policies' => $resolver->forPeriod($payrollPeriod),
             'payrolls' => $payrollPeriod->payrolls()
                 ->with('employee.department')
                 ->orderBy('employee_id')

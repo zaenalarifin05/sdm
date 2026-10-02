@@ -1,24 +1,18 @@
 <?php
 
 return [
-    'policies' => [
+    'supported_modes' => [
         'absent_deduction' => [
-            'enabled' => false,
-            // Supported modes: fixed_per_day, salary_divisor_per_day
-            'mode' => null,
-            'value' => null,
+            'fixed_per_day',
+            'salary_divisor_per_day',
         ],
         'late_deduction' => [
-            'enabled' => false,
-            // Supported modes: fixed_per_minute, fixed_per_incident
-            'mode' => null,
-            'value' => null,
+            'fixed_per_minute',
+            'fixed_per_incident',
         ],
         'overtime_pay' => [
-            'enabled' => false,
-            // Supported modes: fixed_per_minute, fixed_per_hour
-            'mode' => null,
-            'value' => null,
+            'fixed_per_minute',
+            'fixed_per_hour',
         ],
     ],
 ];
