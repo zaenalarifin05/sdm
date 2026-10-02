@@ -11,6 +11,7 @@ use App\Http\Controllers\Finance\PayrollItemController;
 use App\Http\Controllers\Finance\PayrollPeriodController;
 use App\Http\Controllers\Finance\PayrollPolicyPreviewController;
 use App\Http\Controllers\Finance\PayrollPolicyController;
+use App\Http\Controllers\Finance\PayrollReportController;
 use App\Http\Controllers\Finance\PayslipController as FinancePayslipController;
 use App\Http\Controllers\Hr\AttendanceMonitorController;
 use App\Http\Controllers\Hr\DepartmentController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Hr\LeaveApprovalController as HrLeaveApprovalController
 use App\Http\Controllers\Hr\LeaveBalanceController;
 use App\Http\Controllers\Hr\LeaveTypeController;
 use App\Http\Controllers\Hr\OvertimeApprovalController as HrOvertimeApprovalController;
+use App\Http\Controllers\Hr\ReportController;
 use App\Http\Controllers\Hr\ShiftController;
 use App\Http\Controllers\Hr\ShiftScheduleController;
 use App\Http\Controllers\Manager\LeaveApprovalController as ManagerLeaveApprovalController;
@@ -101,6 +103,12 @@ Route::middleware('auth')->group(function () {
         Route::get('leave-balances', [LeaveBalanceController::class, 'index'])->name('leave-balances.index');
         Route::post('leave-balances', [LeaveBalanceController::class, 'store'])->name('leave-balances.store');
 
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/attendance.csv', [ReportController::class, 'attendanceCsv'])->name('reports.attendance.csv');
+        Route::get('reports/leave.csv', [ReportController::class, 'leaveCsv'])->name('reports.leave.csv');
+        Route::get('reports/temporary-permissions.csv', [ReportController::class, 'temporaryPermissionCsv'])->name('reports.temporary-permissions.csv');
+        Route::get('reports/overtime.csv', [ReportController::class, 'overtimeCsv'])->name('reports.overtime.csv');
+
         Route::resource('holidays', HolidayController::class)->except('show');
         Route::resource('departments', DepartmentController::class)->except('show');
         Route::resource('employees', EmployeeController::class)->except('show');
@@ -109,6 +117,9 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('finance')->name('finance.')->middleware('role:finance')->group(function () {
+        Route::get('reports/payroll', [PayrollReportController::class, 'index'])->name('reports.payroll.index');
+        Route::get('reports/payroll.csv', [PayrollReportController::class, 'csv'])->name('reports.payroll.csv');
+
         Route::get('payroll-policies', [PayrollPolicyController::class, 'index'])->name('payroll-policies.index');
         Route::post('payroll-policies', [PayrollPolicyController::class, 'store'])->name('payroll-policies.store');
 
