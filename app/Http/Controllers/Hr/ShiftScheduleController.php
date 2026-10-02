@@ -9,6 +9,7 @@ use App\Models\ShiftSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ShiftScheduleController extends Controller
@@ -45,14 +46,17 @@ class ShiftScheduleController extends Controller
                 'required',
                 Rule::exists('shifts', 'id')->where(fn ($query) => $query->where('is_active', true)),
             ],
-            'work_date' => [
-                'required',
-                'date',
-                Rule::unique('shift_schedules')->where(
-                    fn ($query) => $query->where('employee_id', $request->input('employee_id'))
-                ),
-            ],
+            'work_date' => ['required', 'date'],
         ]);
+
+        if (ShiftSchedule::query()
+            ->where('employee_id', $data['employee_id'])
+            ->whereDate('work_date', $data['work_date'])
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'work_date' => 'Pegawai sudah memiliki jadwal pada tanggal tersebut.',
+            ]);
+        }
 
         ShiftSchedule::create($data + [
             'status' => 'scheduled',
@@ -82,15 +86,19 @@ class ShiftScheduleController extends Controller
                 'required',
                 Rule::exists('shifts', 'id')->where(fn ($query) => $query->where('is_active', true)),
             ],
-            'work_date' => [
-                'required',
-                'date',
-                Rule::unique('shift_schedules')->where(
-                    fn ($query) => $query->where('employee_id', $request->input('employee_id'))
-                )->ignore($schedule),
-            ],
+            'work_date' => ['required', 'date'],
             'status' => ['required', Rule::in(['scheduled', 'cancelled'])],
         ]);
+
+        if (ShiftSchedule::query()
+            ->where('employee_id', $data['employee_id'])
+            ->whereDate('work_date', $data['work_date'])
+            ->whereKeyNot($schedule->getKey())
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'work_date' => 'Pegawai sudah memiliki jadwal pada tanggal tersebut.',
+            ]);
+        }
 
         $schedule->update($data);
 
