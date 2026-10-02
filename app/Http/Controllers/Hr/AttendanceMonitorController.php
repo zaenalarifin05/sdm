@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Http\Controllers\Controller;
+use App\Models\Holiday;
 use App\Models\ShiftSchedule;
 use App\Services\Attendance\ProcessAttendanceForWorkDate;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +14,13 @@ class AttendanceMonitorController extends Controller
 {
     public function index(Request $request): View
     {
-        $workDate = $request->string('work_date')->toString() ?: now(config('app.timezone'))->toDateString();
+        $workDate = $request->string('work_date')->toString()
+            ?: now(config('app.timezone'))->toDateString();
+
+        $holiday = Holiday::query()
+            ->whereDate('holiday_date', $workDate)
+            ->where('is_active', true)
+            ->first();
 
         $schedules = ShiftSchedule::query()
             ->with(['employee.department', 'shift', 'attendance'])
@@ -23,7 +30,7 @@ class AttendanceMonitorController extends Controller
             ->orderBy('employee_id')
             ->get();
 
-        return view('hr.attendance.index', compact('workDate', 'schedules'));
+        return view('hr.attendance.index', compact('workDate', 'holiday', 'schedules'));
     }
 
     public function process(Request $request, ProcessAttendanceForWorkDate $processor): RedirectResponse

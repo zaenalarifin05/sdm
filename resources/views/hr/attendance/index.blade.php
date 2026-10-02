@@ -15,6 +15,15 @@
     </form>
 </div>
 
+@if($holiday)
+<div class="notice">
+    <strong>Hari Libur: {{ $holiday->name }}</strong>
+    ({{ $holiday->type }})
+    @if($holiday->reference) · {{ $holiday->reference }} @endif
+    <br><span class="muted">Jadwal shift yang tetap ditetapkan pada tanggal ini masih wajib diproses sebagai hari kerja.</span>
+</div>
+@endif
+
 <div class="card">
     <form method="POST" action="{{ route('hr.attendance.process') }}">
         @csrf
@@ -50,7 +59,7 @@
             <td>{{ $attendance?->attendance_status ?? 'PENDING' }}</td>
         </tr>
     @empty
-        <tr><td colspan="7">Tidak ada jadwal aktif pada tanggal ini.</td></tr>
+        <tr><td colspan="7">{{ $holiday ? 'Hari libur tanpa jadwal kerja aktif.' : 'Tidak ada jadwal aktif pada tanggal ini.' }}</td></tr>
     @endforelse
     </tbody>
 </table>
