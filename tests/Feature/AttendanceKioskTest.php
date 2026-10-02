@@ -90,6 +90,23 @@ class AttendanceKioskTest extends TestCase
         $this->assertDatabaseCount('attendances', 0);
     }
 
+    public function test_kiosk_rate_limits_repeated_attempts_for_same_ip_and_nip(): void
+    {
+        [$employee] = $this->makeScheduledEmployee('2026-10-02', false);
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-02 07:01:00', 'Asia/Jakarta'));
+
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $this->post('/attendance', ['nip' => $employee->nip, 'pin' => '999999'])
+                ->assertSessionHasErrors('nip');
+        }
+
+        $this->post('/attendance', ['nip' => $employee->nip, 'pin' => '999999'])
+            ->assertStatus(429);
+
+        $this->assertDatabaseCount('attendances', 0);
+    }
+
     public function test_third_punch_after_completed_attendance_is_rejected(): void
     {
         [$employee] = $this->makeScheduledEmployee('2026-10-02', false);
