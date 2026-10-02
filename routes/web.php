@@ -1,12 +1,19 @@
 <?php
 
+use App\Http\Controllers\AttendanceKioskController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Hr\DepartmentController;
 use App\Http\Controllers\Hr\EmployeeController;
 use App\Http\Controllers\Hr\ShiftController;
 use App\Http\Controllers\Hr\ShiftScheduleController;
+use App\Http\Controllers\MyAttendanceController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/attendance', [AttendanceKioskController::class, 'create'])->name('attendance.create');
+Route::post('/attendance', [AttendanceKioskController::class, 'store'])
+    ->middleware('throttle:attendance-kiosk')
+    ->name('attendance.store');
 
 Route::get('/', fn () => redirect()->route('dashboard'));
 
@@ -19,6 +26,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/my/attendance', MyAttendanceController::class)->name('my.attendance');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::prefix('hr')->name('hr.')->middleware('role:hr_admin,system_admin')->group(function () {
