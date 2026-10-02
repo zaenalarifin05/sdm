@@ -33,6 +33,7 @@ class RecordAttendancePunch
 
             $openAttendance = Attendance::query()
                 ->where('employee_id', $employee->id)
+                ->whereNotNull('check_in_at')
                 ->whereNull('check_out_at')
                 ->latest('check_in_at')
                 ->lockForUpdate()
@@ -42,6 +43,7 @@ class RecordAttendancePunch
                 $openAttendance->update([
                     'check_out_at' => $now,
                     'state' => 'completed',
+                    'attendance_status' => 'PRESENT',
                 ]);
 
                 return new AttendancePunchResult(

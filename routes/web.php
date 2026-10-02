@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceKioskController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Hr\AttendanceMonitorController;
 use App\Http\Controllers\Hr\DepartmentController;
 use App\Http\Controllers\Hr\EmployeeController;
 use App\Http\Controllers\Hr\ShiftController;
@@ -30,6 +31,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::prefix('hr')->name('hr.')->middleware('role:hr_admin,system_admin')->group(function () {
+        Route::get('attendance', [AttendanceMonitorController::class, 'index'])->name('attendance.index');
+        Route::post('attendance/process', [AttendanceMonitorController::class, 'process'])->name('attendance.process');
         Route::resource('departments', DepartmentController::class)->except('show');
         Route::resource('employees', EmployeeController::class)->except('show');
         Route::resource('shifts', ShiftController::class)->except('show');

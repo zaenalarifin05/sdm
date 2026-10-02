@@ -15,7 +15,7 @@ return new class extends Migration
             $table->date('work_date');
             $table->timestampTz('scheduled_start_at');
             $table->timestampTz('scheduled_end_at');
-            $table->timestampTz('check_in_at');
+            $table->timestampTz('check_in_at')->nullable();
             $table->timestampTz('check_out_at')->nullable();
             $table->string('state', 24)->default('checked_in')->index();
             $table->string('attendance_status', 24)->nullable()->index();
